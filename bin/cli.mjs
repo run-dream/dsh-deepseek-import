@@ -12,7 +12,7 @@ import { join, resolve } from 'node:path'
 import { DeepSeekApi } from '../lib/api.mjs'
 import { loginInteractively, resolveStoredToken, resolveToken, writeAuthFile } from '../lib/auth.mjs'
 import { renderScan, scanBrowsers } from '../lib/browsers.mjs'
-import { buildRunArgs, readRunStatus, renderRunStatus, startBackgroundRun } from '../lib/background.mjs'
+import { buildRunArgs, readRunStatus, renderRunStatus, startBackgroundRun, summarizeRunStatus } from '../lib/background.mjs'
 import { readTokenFromFile, readTokenViaCdp } from '../lib/cdp.mjs'
 import { filterSessions, migrateAccount, resolveSince } from '../lib/migrate.mjs'
 import { OUT_DIR, STATE_PATH, acquireRunLock, loadState, releaseRunLock, saveState } from '../lib/state.mjs'
@@ -141,6 +141,10 @@ async function main() {
 
   if (command === 'progress') {
     const status = await readRunStatus()
+    if (flag('json', false)) {
+      log(JSON.stringify(summarizeRunStatus(status), null, 2))
+      return 0
+    }
     log(renderRunStatus(status))
     if (!status.info) log('（用 ds-migrate run 或在 dsh 里调用 deepseek_migrate 启动一次迁移）')
     return 0

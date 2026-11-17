@@ -134,7 +134,8 @@ ds-migrate token --file ./tok # 从文件取
 
 Agent 侧就三步：`deepseek_migrate({action:"status"})` →（需要时）`login` → `run`。
 
-支持**增量**（`since: "last"`，续上次游标）和**后台运行**（`background: true` + `progress` 查进度）。
+支持**增量**（`since: "last"`，续上次游标；功能上线前跑过全量的用户也能自动推导基线）和
+**后台运行**（`background: true` + `progress` 查进度，`--json` 拿结构化数字）。
 
 `status` **先做浏览器检测**：装了哪些 Chromium 内核浏览器、哪些 profile 已登录、有没有活着的调试端口，
 并给出建议动作 `use-profile / attach-cdp / launch / none`——只有 `launch` 才需要弹出浏览器让用户扫码。
@@ -172,7 +173,7 @@ node test/skill.test.mjs        # 运行时 skill 注册形状
 node test/browsers.test.mjs     # 浏览器检测与建议动作
 node test/resilience.test.mjs   # 登录失效中止 / 失败重试 / 未知片段计数
 node test/incremental.test.mjs  # since=last 游标与 5 分钟重叠
-node test/background.test.mjs   # 后台任务参数与进度渲染
+node test/background.test.mjs   # 后台任务参数、进度渲染与结构化解析
 ```
 
 ## License

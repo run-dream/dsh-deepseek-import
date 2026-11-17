@@ -60,7 +60,8 @@ CLI 等价：`ds-migrate browsers`。
 - **增量**：`deepseek_migrate({ action: "run", since: "last" })` —— 从上次跑到的位置继续（自带 5 分钟重叠，
   边界会话不会漏）。第一次没有游标时等价全量。
 - **后台**：`deepseek_migrate({ action: "run", background: true })` —— 立刻返回，迁移在独立进程里跑，
-  不占用对话；用 `deepseek_migrate({ action: "progress" })` 看进度。几百条以上一律用后台。
+  不占用对话；用 `deepseek_migrate({ action: "progress" })` 看进度，加 `json: true` 拿
+  `{running,done,total,percent,lastLine}`，可以直接渲染成进度条。几百条以上一律用后台。
 
 ## 常见情况
 

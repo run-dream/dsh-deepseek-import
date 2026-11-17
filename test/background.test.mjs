@@ -24,3 +24,38 @@ const rendered = renderRunStatus({
 assert.match(rendered, /进行中（pid 1234/)
 assert.match(rendered, /4\/10 y → 2 轮/)
 console.log('background.test OK')
+
+// 结构化进度解析
+import { summarizeRunStatus } from '../lib/background.mjs'
+
+const live = summarizeRunStatus({
+  running: true,
+  info: { pid: 9, startedAt: 1000 },
+  lines: ['拉取 3/40 a', '3/40 a → 8 轮', '拉取 5/40 b'],
+  lastLine: '拉取 5/40 b',
+})
+assert.equal(live.done, 5, '取日志里最大的 done')
+assert.equal(live.total, 40)
+assert.equal(live.percent, 13)
+assert.equal(live.running, true)
+assert.equal(live.finished, false)
+
+const done = summarizeRunStatus({
+  running: false,
+  info: { pid: 9, startedAt: 1000 },
+  lines: ['40/40 b → 2 轮', '完成：2 条会话 / 3 轮 / 跳过 0 / 失败 0'],
+  lastLine: '完成：2 条会话',
+})
+assert.equal(done.finished, true)
+assert.equal(done.percent, 100)
+
+const aborted = summarizeRunStatus({
+  running: false,
+  info: { pid: 9, startedAt: 1000 },
+  lines: ['3/40 a', '已中止（登录态失效）'],
+  lastLine: '已中止（登录态失效）',
+})
+assert.equal(aborted.aborted, true)
+
+assert.equal(summarizeRunStatus({ running: false, info: null, lines: [], lastLine: '' }).percent, 0)
+console.log('background.summary OK')
