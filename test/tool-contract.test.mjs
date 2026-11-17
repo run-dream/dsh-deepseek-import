@@ -47,19 +47,27 @@ console.log('tool-contract.test OK')
 {
   let assertSupported = null
   try {
-    const mod = await import('/home/ruanjun01/.local/share/mise/installs/node/22.22.3/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-tools/lib/types/json-schema.js')
+    const mod = await import('/home/ruanjun01/.local/share/mise/installs/node/22.22.3/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-tools/lib/index.js')
     assertSupported = mod.assertSupportedJsonSchema
+    globalThis.__dshTools = mod
   } catch {
     try {
-      const mod = await import('@deepseek-ai/dsh-tools/lib/types/json-schema.js')
+      const mod = await import('@deepseek-ai/dsh-tools')
       assertSupported = mod.assertSupportedJsonSchema
+      globalThis.__dshTools = mod
     } catch { /* 没装 dsh，跳过 */ }
   }
+  const T = globalThis.__dshTools
+  const assertSupportedParameterMap = (params) => T.parameterSchemaSpecToJsonSchema(params)
+  const assertSupportedOutputSchema = (schema) => T.valueSchemaSpecToJsonSchema(schema)
   if (!assertSupported) {
     console.log('tool-contract.schema SKIP（本机没有 dsh-tools 校验器）')
   } else {
     assertSupported(def.output.schema)
     assertSupported({ type: 'object', properties: def.parameters, additionalProperties: false })
+    // 走宿主真实的两条编译路径（注册与出参校验各用一条）
+    assertSupportedParameterMap(def.parameters)
+    assertSupportedOutputSchema(def.output.schema)
     assert.throws(() => assertSupported({
       type: 'object',
       properties: { ok: { type: 'boolean', required: true } },
