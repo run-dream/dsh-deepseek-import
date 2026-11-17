@@ -45,6 +45,11 @@ deepseek_migrate({ action: "run", background: true })      // 后台跑，不占
 deepseek_migrate({ action: "progress" })                   // 看后台进度
 ```
 
+## 大对话单独导入
+
+默认单条 >32MB 会跳过。要单独迁某一条：先 `action:"skipped"` 拿到 id，
+再 `action:"run"` 带 `sessionIds:[id]`、`maxMb:600`、`force:true`、`downloadFiles:false`。
+
 ## 4. 可以直接粘进系统提示的片段
 
 ```

@@ -21,6 +21,22 @@ chat.deepseek.com 私有接口  →  interchange v1  →  dsh-chat-import  →  
 - **格式**：不自己造格式，转成 `dsh-chat-import` 的 **interchange v1**（`interchange: "dsh-chat-import"`, `version: 1`）。`reasoning` 块、`image` 块、附件都原生支持，思维链不会丢。
 - **导入**：交给已装的 `dsh-chat-import`（`/import auto` 或 `chatImport` 服务），幂等、墓碑、工作区归组都是现成的。
 
+## 超大单会话：默认保护，也能单独导入
+
+单条会话超过 **32MB**（几百轮 + 大量图片）默认跳过并计数，不会拖崩进程或把内存打满：
+
+```bash
+ds-migrate list-skipped      # 看哪几条被跳过、各多大
+ds-migrate run --only <id> --max-mb 600 --force --no-files
+```
+
+- `--only` 可重复，只导指定会话（优先于 `--since` / `--limit`）
+- `--max-mb` 放宽上限，**必须显式指定**——保护不是默认放开
+- `--no-files` 只迁文本：大图片通常是体积主因，先确认文本没问题再放开
+
+实现上是**解析前**就用响应字节数判定（不额外 stringify，避免内存峰值翻倍），
+超过 8MB 的产物改用紧凑 JSON 写出。
+
 ## 安装
 
 ```bash

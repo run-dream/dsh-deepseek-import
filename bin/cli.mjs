@@ -33,6 +33,20 @@ function flag(name, fallback) {
 
 const log = (message) => process.stdout.write(`${message}\n`)
 
+/** 收集所有同名 flag 的值（--only 可以重复）。 */
+function flagAll(name) {
+  const out = []
+  for (let i = 0; i < argv.length; i += 1) {
+    if (argv[i] !== `--${name}`) continue
+    const value = argv[i + 1]
+    if (value && !value.startsWith('--')) out.push(value)
+  }
+  return out
+}
+
+const onlyIds = flagAll('only')
+const maxMb = Number(flag('max-mb', 0)) || 0
+
 const cdpPort = flag('cdp', undefined)
 const tokenFile = flag('token-file', undefined)
 
@@ -53,6 +67,8 @@ async function main() {
   ds-migrate list [--json]                 列出会话
   ds-migrate dump <sessionId> [--out f]    保存一条会话的原始 JSON
   ds-migrate run [--dry-run] [--limit N] [--min-turns N] [--since YYYY-MM-DD] [--force] [--no-files] [--out dir]
+  ds-migrate run --only <id> [--max-mb N]  单独导入指定会话（可放宽体积上限）
+  ds-migrate list-skipped                  列出被体积保护跳过的会话
   ds-migrate undo [--dry-run] [--yes]      撤销：删掉本工具导入的会话副本
   ds-migrate progress                      查看后台迁移进度
   ds-migrate doctor                        体检
@@ -165,6 +181,26 @@ async function main() {
     return 0
   }
 
+  if (command === 'list-skipped') {
+    const state = await loadState()
+    const skipped = Object.entries(state.sessions)
+      .filter(([, info]) => info && info.skipped === 'too-large')
+      .map(([id, info]) => ({ id, title: info.title || '', bytes: Number(info.bytes) || 0 }))
+    if (!skipped.length) {
+      log('没有被跳过的超大会话。')
+      return 0
+    }
+    log(`有 ${skipped.length} 条会话因体积过大被跳过：`)
+    for (const item of skipped) {
+      log(`  ${item.id}  ${(item.bytes / 1048576).toFixed(1)}MB  ${item.title.slice(0, 30)}`)
+    }
+    log('')
+    log('单独导入其中一条（会重新拉取，可放宽上限）：')
+    log(`  ds-migrate run --only ${skipped[0].id} --max-mb 600 --force --no-files`)
+    log('--no-files 只迁文本（大图片往往是体积主因）；确认没问题再去掉它重跑。')
+    return 0
+  }
+
   if (command === 'progress') {
     const status = await readRunStatus()
     if (flag('json', false)) {
@@ -262,6 +298,8 @@ async function main() {
         force: Boolean(flag('force', false)),
         downloadFiles: !flag('no-files', false),
         outDir,
+        sessionIds: onlyIds,
+        maxSessionBytes: maxMb ? maxMb * 1024 * 1024 : undefined,
       }, { log })
       if (!info) return 1
       log(`已启动后台迁移（pid ${info.pid}），日志：${info.journal}`)
@@ -282,6 +320,12 @@ async function main() {
 
     if (dryRun) {
       const sessions = await api.listSessions({ onPage: ({ total }) => log(`  已取 ${total} 条…`) })
+      if (onlyIds.length) {
+        const picked = sessions.filter((item) => onlyIds.includes(String(item.id)))
+        log(`dry-run：按 id 指定 ${onlyIds.length} 条，命中 ${picked.length} 条`)
+        for (const item of picked) log(`  · ${String(item.title || '(无标题)').slice(0, 40)}  ${item.id}`)
+        return 0
+      }
       const selected = filterSessions(sessions, {
         since: flag('since', undefined) === 'last'
           ? new Date(resolveSince('last', state))
@@ -305,6 +349,8 @@ async function main() {
         minTurns: Number(flag('min-turns', 0)) || 0,
         since: flag('since', undefined),
         limit: firstRun ? 1 : explicitLimit,
+        sessionIds: onlyIds,
+        maxSessionBytes: maxMb ? maxMb * 1024 * 1024 : undefined,
       },
       onProgress: ({ message }) => log(message),
     })

@@ -66,3 +66,34 @@ const unknown = deepseekToInterchange({
 assert.equal(unknown.stats.skippedBlocks, 1)
 assert.deepEqual(unknown.stats.unknownFragmentTypes, ['BRAND_NEW_THING'])
 console.log('resilience.test OK')
+
+// 5) 超大会话：按响应字节判定、记录字节、不记为失败
+{
+  const { filterByIds } = await import('../lib/migrate.mjs')
+  assert.deepEqual(filterByIds([{ id: 'a' }, { id: 'b' }], ['b']).map((x) => x.id), ['b'])
+  assert.equal(filterByIds([{ id: 'a' }], []), null, '空数组表示不限')
+
+  const bigApi = {
+    async listSessions() { return [{ id: 'big', title: '巨型会话', updated_at: 1710003600 }] },
+    async fetchSessionMeta() { return { data: { chat_messages: [] }, bytes: 90 * 1024 * 1024 } },
+    async fetchFile() { return null },
+  }
+  const bigState = { version: 1, sessions: {}, imported: {} }
+  const bigRun = await migrateAccount({ api: bigApi, state: bigState, options: { outDir, maxSessionBytes: 32 * 1024 * 1024 }, onProgress: () => {} })
+  assert.equal(bigRun.items.length, 0)
+  assert.equal(bigRun.failed, 0, '超大不算失败')
+  assert.equal(bigRun.skipped, 1)
+  assert.equal(bigRun.tooLarge.length, 1)
+  assert.ok(bigRun.tooLarge[0].bytes > 32 * 1024 * 1024, '应记录实际体积')
+  assert.equal(bigState.sessions.big.skipped, 'too-large', '状态里要能查到，供 list-skipped 使用')
+
+  // 放宽上限后可以单独导入
+  const okRun = await migrateAccount({
+    api: { ...bigApi, async fetchSessionMeta() { return { data: conv('big'), bytes: 90 * 1024 * 1024 } } },
+    state: { version: 1, sessions: {}, imported: {} },
+    options: { outDir, sessionIds: ['big'], maxSessionBytes: 600 * 1024 * 1024 },
+    onProgress: () => {},
+  })
+  assert.equal(okRun.items.length, 1, '放宽上限 + 指定 id 应成功导入')
+  console.log('resilience.oversize OK')
+}

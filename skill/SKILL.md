@@ -81,6 +81,18 @@ CLI 等价：`ds-migrate browsers`。
 - 不要承诺手机本机能迁移：dsh-go 的 App 只是入口，抓取必须跑在有桌面环境的引擎上。手机用户走「连到自己的电脑」再迁移，这条要在第一次就讲清楚。
 - 不要碰内容审查：这是用户自己的数据搬家，不判断内容。
 
+## 超大单会话
+
+单条超过 32MB 会被跳过（不计失败）。用户想单独要那一条时：
+
+```
+deepseek_migrate({ action: "skipped" })                      // 列出被跳过的，带体积
+deepseek_migrate({ action: "run", sessionIds: ["<id>"],
+                   maxMb: 600, force: true, downloadFiles: false })
+```
+
+先 `downloadFiles: false` 只迁文本，确认没问题再放开图片——体积大多来自图片。
+
 ## 后悔药
 
 用户想撤销时：`deepseek_migrate({ action: "undo" })` 先给预览，再带 `confirm: true` 才真的删。
