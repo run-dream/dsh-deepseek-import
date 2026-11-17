@@ -17,6 +17,19 @@ description: 把用户 DeepSeek 账号里的全部对话（含思维链、图片
    装完提示用户重启 dsh（或等 profile 热重载），再从第 1 步重来。
 3. 如果返回 `登录态：无`，说明是第一次：执行 `deepseek_migrate({ action: "login" })`，**告诉用户会弹出一个浏览器窗口**，让他在里面登录 DeepSeek（手机号或微信扫码都行），登录完成后自动继续。
 
+## 登录态拿不到时
+
+按顺序试，别让用户去翻源码：
+
+1. `ds-migrate browsers` —— 看能不能自动认出他的浏览器 profile，以及里面有没有登录态
+2. 如果认得出来但读不到 token（`.ldb` 被 Snappy 压缩），让他用 CDP：
+   用 **极速模式** 启动浏览器并带 `--remote-debugging-port=9222`，登录 `chat.deepseek.com`，
+   然后 `ds-migrate token --cdp 9222`
+3. 都不行就最后一招：让他在浏览器控制台执行 `copy(JSON.parse(localStorage.userToken).value)`，
+   存成文件后 `ds-migrate token --file <路径>`
+
+**国产浏览器（360/QQ/搜狗/夸克/UC）**：Chromium 内核，同样走上面第 2 条；但必须极速模式，且调试参数要手动加。
+
 ## 执行
 
 1. `deepseek_migrate({ action: "preview" })` —— 把“账号里共 N 条、本次处理 M 条”复述给用户，等他一句“确认”再往下。这是唯一需要用户二次确认的地方。

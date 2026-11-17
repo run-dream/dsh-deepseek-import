@@ -25,3 +25,7 @@ jobs:
         run: node test/api.test.mjs
       - name: 真解析器兼容（未装 dsh-chat-import 时自动 SKIP）
         run: node test/import-compat.test.mjs
+      - name: CDP 目标挑选与 token 解析
+        run: node test/cdp.test.mjs
+      - name: 运行时 skill 注册
+        run: node test/skill.test.mjs

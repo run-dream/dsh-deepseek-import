@@ -10,7 +10,8 @@
 import { mkdir, readdir, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { DeepSeekApi } from '../lib/api.mjs'
-import { loginInteractively, resolveStoredToken, resolveToken } from '../lib/auth.mjs'
+import { browserRoots, findLevelDbDirs, loginInteractively, readTokenFromLevelDb, resolveStoredToken, resolveToken, writeAuthFile } from '../lib/auth.mjs'
+import { readTokenFromFile, readTokenViaCdp } from '../lib/cdp.mjs'
 import { migrateAccount } from '../lib/migrate.mjs'
 import { OUT_DIR, STATE_PATH, loadState, saveState } from '../lib/state.mjs'
 
@@ -27,8 +28,15 @@ function flag(name, fallback) {
 
 const log = (message) => process.stdout.write(`${message}\n`)
 
+const cdpPort = flag('cdp', undefined)
+const tokenFile = flag('token-file', undefined)
+
 async function buildApi() {
-  const resolved = await resolveToken({ log })
+  const resolved = await resolveToken({
+    log,
+    cdpPort: Number(cdpPort) || undefined,
+    tokenFile: typeof tokenFile === 'string' ? tokenFile : undefined,
+  })
   return { api: new DeepSeekApi({ token: resolved.token, log }), resolved }
 }
 
@@ -78,6 +86,41 @@ async function main() {
       log(`下一步：/import auto "${dir}"`)
     }
     return 0
+  }
+
+  if (command === 'browsers') {
+    const roots = await browserRoots()
+    const dirs = await findLevelDbDirs()
+    log(`发现 ${roots.length} 个浏览器数据根、${dirs.length} 个 profile：`)
+    for (const entry of dirs) {
+      const token = await readTokenFromLevelDb(entry.dir)
+      log(`  ${token ? '有登录态' : '      —  '}  ${entry.browser} / ${entry.profile}  ${entry.dir}`)
+    }
+    if (!dirs.length) log('  没找到任何 profile（浏览器可能装在非标准位置）')
+    log('\n如果这里没有你的浏览器（例如国产 Chromium 内核浏览器），改用 CDP：')
+    log('  用 --remote-debugging-port=9222 启动浏览器后跑 ds-migrate token --cdp 9222')
+    return 0
+  }
+
+  if (command === 'token') {
+    const manual = typeof tokenFile === 'string' ? await readTokenFromFile(tokenFile) : ''
+    if (manual) {
+      await writeAuthFile({ token: manual, savedAt: Date.now(), source: 'token-file' })
+      log('已从文件导入 token')
+      return 0
+    }
+    const port = Number(cdpPort) || 9222
+    const viaCdp = await readTokenViaCdp({ port })
+    if (viaCdp) {
+      await writeAuthFile({ token: viaCdp.token, savedAt: Date.now(), source: viaCdp.source })
+      log(`已从 CDP 端口 ${port} 读取并保存登录态（${viaCdp.source}）`)
+      return 0
+    }
+    log(`两种方式都没拿到 token。用法：
+  ds-migrate token --file /path/to/token.txt      从文件读（裸 token 或 {"token":"..."}）
+  ds-migrate token --cdp 9222                     从浏览器调试端口读
+先用 --remote-debugging-port=9222 启动浏览器，并在里面登录 chat.deepseek.com。`)
+    return 1
   }
 
   if (command === 'list') {

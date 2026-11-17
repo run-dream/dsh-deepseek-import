@@ -84,6 +84,48 @@ node test/convert.test.mjs   # 转换：分支裁剪、新旧格式、思维链�
 node test/migrate.test.mjs   # 编排：幂等、force、min-turns、limit
 ```
 
+## 浏览器与登录态
+
+登录态获取是**自动逐级尝试**的，不需要用户选：
+
+1. `~/.dsh/dsh-deepseek-import/auth.json`（上一次保存的凭证）
+2. **自动发现**本机所有 Chromium 系浏览器的 localStorage（不写死厂商路径）
+3. **CDP**：浏览器如果正用 `--remote-debugging-port=9222` 启动着，直接连上去读
+4. `--token-file <path>` 指定的文件（裸 token 或 `{"token":"..."}`）
+5. Playwright 弹窗登录（最后手段，需要装 playwright）
+
+```bash
+ds-migrate browsers        # 列出自动发现了哪些浏览器 profile、哪个有登录态
+ds-migrate token --cdp 9222   # 从调试端口取
+ds-migrate token --file ./tok # 从文件取
+```
+
+### 浏览器兼容性
+
+| 浏览器 | 自动读取 localStorage | CDP 注入 | Playwright 弹窗 |
+|---|---|---|---|
+| Chrome / Edge / Chromium | ✅ 自动发现 | ✅ 最可靠 | ✅（channel） |
+| 360 安全/极速、QQ、搜狗、夸克、UC、2345 等 Chromium 内核 | ⚠️ 能发现 profile，但见下方说明 | ⚠️ 需「极速模式」+ 手动加启动参数 | ❌ 不是官方 channel |
+| IE 内核 / 兼容模式 | ❌ 不适用 | ❌ | ❌ |
+
+**为什么「读 localStorage」只算 ⚠️**：Chrome 的 `.ldb` 是 Snappy 压缩块，`userToken` 若已被压实，明文扫描读不到。
+实测 Windows Chrome 上就踩过这个坑——能读到别的站点同名 key（比如 qwen.ai 的 `userToken`），却读不到 deepseek 的。
+所以**可靠顺序是 CDP > 弹窗登录 > 读 LevelDB**，后者只在 WAL 还没压实时有效。
+
+**国产浏览器怎么用 CDP**：它们都是 Chromium 内核，但要用「极速模式」而不是「兼容模式」，并且手动带上调试参数启动，例如
+
+```bat
+"C:\Program Files (x86)\360\360se6\Application\360se.exe" --remote-debugging-port=9222
+```
+
+起来后在那个窗口里登录 `chat.deepseek.com`，再执行 `ds-migrate token --cdp 9222`。
+
+### 这个 skill 怎么分发
+
+`skill/SKILL.md` 由插件在运行时通过 `ctx.skills.register()` 注册（[lib/skill.mjs](lib/skill.mjs)），
+所以 **`npm i` 装上插件就自动拥有该技能**，用户不需要手工往 `~/.dsh/skills` 拷文件。
+宿主没有 `skills` 服务时（headless/精简 profile）会自动跳过，命令与工具照常可用。
+
 ## 安全与隐私
 
 - 数据全部留在本机，没有任何服务器：[PRIVACY.md](PRIVACY.md)
@@ -105,6 +147,8 @@ node test/convert.test.mjs      # 分支裁剪 / 新旧格式 / 思维链 / 图�
 node test/migrate.test.mjs      # 幂等 / force / min-turns / limit
 node test/api.test.mjs          # 附件下载 URL（ty=p / ty=r / HTML 丢弃）
 node test/import-compat.test.mjs # 喂给真 dsh-chat-import 解析器（未装则 SKIP）
+node test/cdp.test.mjs          # CDP 目标挑选与 token 解析
+node test/skill.test.mjs        # 运行时 skill 注册形状
 ```
 
 ## License
