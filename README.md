@@ -84,6 +84,14 @@ node test/convert.test.mjs   # 转换：分支裁剪、新旧格式、思维链�
 node test/migrate.test.mjs   # 编排：幂等、force、min-turns、limit
 ```
 
+## 安全与隐私
+
+- 数据全部留在本机，没有任何服务器：[PRIVACY.md](PRIVACY.md)
+- 威胁模型、已知风险、漏洞上报： [SECURITY.md](SECURITY.md)
+
+**最短版**：登录 token 存在 `~/.dsh/dsh-deepseek-import/auth.json`（权限 600），等价于账号访问权；
+产物是明文对话；只对 `chat.deepseek.com` 与 `files.deepseeksvc.com` 发请求。用完可 `rm -rf ~/.dsh/dsh-deepseek-import`。
+
 ## 已知限制
 
 - **手机本机模式不支持**：抓取要有桌面浏览器/HTTP 环境，dsh-go 的 App 只作入口，迁移跑在连着的电脑上。
@@ -101,4 +109,4 @@ node test/import-compat.test.mjs # 喂给真 dsh-chat-import 解析器（未装�
 
 ## License
 
-MIT
+MIT · 见 [LICENSE](LICENSE)。隐私与安全说明见 [PRIVACY.md](PRIVACY.md)、[SECURITY.md](SECURITY.md)。
