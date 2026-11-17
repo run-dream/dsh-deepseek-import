@@ -67,9 +67,11 @@ async function ensureHeap() {
   if (process.execArgv.some((arg) => arg.startsWith('--max-old-space-size'))) return
   const { spawnSync } = await import('node:child_process')
   const args = [`--max-old-space-size=${HEAP_MB}`, ...process.execArgv, ...process.argv.slice(1)]
+  const isElectron = Boolean(process.versions && process.versions.electron)
   const result = spawnSync(process.execPath, args, {
     stdio: 'inherit',
-    env: { ...process.env, DSH_HEAP_BUMPED: '1' },
+    // Electron 下必须声明「当 Node 跑」，否则会再弹一个 Electron 实例
+    env: { ...process.env, DSH_HEAP_BUMPED: '1', ...(isElectron ? { ELECTRON_RUN_AS_NODE: '1' } : {}) },
   })
   process.exit(result.status === null ? 1 : result.status)
 }
