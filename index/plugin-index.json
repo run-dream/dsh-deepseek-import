@@ -1,0 +1,28 @@
+{
+  "format": 1,
+  "title": { "en": "run-dream DSH plugins", "zh": "run-dream 的 DSH 插件" },
+  "description": {
+    "en": "Plugins maintained by run-dream for DeepSeek Harness.",
+    "zh": "run-dream 维护的 DeepSeek Harness 插件。"
+  },
+  "plugins": [
+    {
+      "name": "dsh-deepseek-account-import",
+      "title": { "en": "DeepSeek account import", "zh": "DeepSeek 全账号迁到 dsh" },
+      "description": {
+        "en": "Migrate a whole DeepSeek account (every conversation, with thinking, web-search evidence, images and attachments) into DeepSeek Harness sessions. Say one sentence; it auto-detects your browser, logs you in once, and imports everything.",
+        "zh": "把一个 DeepSeek 账号的对话整体迁到 dsh：思维链、联网搜索证据、图片原图、附件一起搬。装好后说一句话即可，自动检测浏览器、只需登录一次。"
+      },
+      "author": "run-dream",
+      "homepage": "https://github.com/run-dream/dsh-deepseek-import",
+      "repository": { "url": "https://github.com/run-dream/dsh-deepseek-import" },
+      "versions": [
+        {
+          "version": "0.1.2",
+          "publishTimestamp": 1794885662,
+          "source": { "type": "npm" }
+        }
+      ]
+    }
+  ]
+}

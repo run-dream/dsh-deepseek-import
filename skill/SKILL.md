@@ -43,9 +43,11 @@ CLI 等价：`ds-migrate browsers`。
 
 **国产浏览器（360/QQ/搜狗/夸克/UC）**：Chromium 内核，同样走上面第 2 条；但必须极速模式，且调试参数要手动加。
 
-## 执行
+## 执行（第一次只迁 1 条）
 
-1. `deepseek_migrate({ action: "preview" })` —— 把“账号里共 N 条、本次处理 M 条”复述给用户，等他一句“确认”再往下。这是唯一需要用户二次确认的地方。
+1. 第一次运行不带 `all`：工具会自动只迁 **1 条**做验证。用户确认侧栏里那条会话正常后，再调
+   `deepseek_migrate({ action: "run", all: true, background: true })` 迁剩下的。
+2. `deepseek_migrate({ action: "preview" })` —— 把“账号里共 N 条、本次处理 M 条”复述给用户，等他一句“确认”再往下。这是唯一需要用户二次确认的地方。
 2. `deepseek_migrate({ action: "run" })` —— 拉取 → 转 interchange v1 → 调用 chatImport 导入。
    这一步可能跑十几分钟。**不要因为慢就中途改参数重来**；进度由插件自己记录，超时或断线后重新执行同一个 `run` 会从断点续上（已完成的会话会跳过）。
 3. 报告结果，格式固定：
@@ -78,6 +80,11 @@ CLI 等价：`ds-migrate browsers`。
 - 不要把 token、cookie、会话正文贴进对话里。
 - 不要承诺手机本机能迁移：dsh-go 的 App 只是入口，抓取必须跑在有桌面环境的引擎上。手机用户走「连到自己的电脑」再迁移，这条要在第一次就讲清楚。
 - 不要碰内容审查：这是用户自己的数据搬家，不判断内容。
+
+## 后悔药
+
+用户想撤销时：`deepseek_migrate({ action: "undo" })` 先给预览，再带 `confirm: true` 才真的删。
+**只删本工具导入的会话副本，DeepSeek 上的原始对话不受影响**——这句话一定要跟用户说清。
 
 ## 迁移之后
 

@@ -38,6 +38,8 @@ deepseek_migrate({ action: "run" })
 增量与后台：
 
 ```js
+deepseek_migrate({ action: "run" })                        // 第一次：只迁 1 条做验证
+deepseek_migrate({ action: "run", all: true })             // 确认后：全量
 deepseek_migrate({ action: "run", since: "last" })        // 只迁上次之后的新会话
 deepseek_migrate({ action: "run", background: true })      // 后台跑，不占对话
 deepseek_migrate({ action: "progress" })                   // 看后台进度

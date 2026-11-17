@@ -13,6 +13,9 @@ import { DeepSeekApi } from '../lib/api.mjs'
 import { loginInteractively, resolveStoredToken, resolveToken, writeAuthFile } from '../lib/auth.mjs'
 import { renderScan, scanBrowsers } from '../lib/browsers.mjs'
 import { buildRunArgs, readRunStatus, renderRunStatus, startBackgroundRun, summarizeRunStatus } from '../lib/background.mjs'
+import { renderError } from '../lib/errors.mjs'
+import { undoImported } from '../lib/undo.mjs'
+import { notify } from '../lib/notify.mjs'
 import { readTokenFromFile, readTokenViaCdp } from '../lib/cdp.mjs'
 import { filterSessions, migrateAccount, resolveSince } from '../lib/migrate.mjs'
 import { OUT_DIR, STATE_PATH, acquireRunLock, loadState, releaseRunLock, saveState } from '../lib/state.mjs'
@@ -50,6 +53,7 @@ async function main() {
   ds-migrate list [--json]                 列出会话
   ds-migrate dump <sessionId> [--out f]    保存一条会话的原始 JSON
   ds-migrate run [--dry-run] [--limit N] [--min-turns N] [--since YYYY-MM-DD] [--force] [--no-files] [--out dir]
+  ds-migrate undo [--dry-run] [--yes]      撤销：删掉本工具导入的会话副本
   ds-migrate progress                      查看后台迁移进度
   ds-migrate doctor                        体检
 
@@ -136,6 +140,28 @@ async function main() {
     } catch { /* 部分平台不支持 statfs */ }
 
     if (files.length) log(`下一步：/import auto "${dir}"`)
+    return 0
+  }
+
+  if (command === 'undo') {
+    const preview = await undoImported({ dryRun: true })
+    if (!preview.entries) {
+      log('没有找到本工具的导入登记（可能还没导入过）。')
+      return 0
+    }
+    log(`本工具导入的会话：${preview.entries} 条登记，可删除 ${preview.removedSessions} 个，缺失 ${preview.missingSessions} 个`)
+    if (flag('dry-run', false)) {
+      log('（dry-run：没有删除任何东西）')
+      return 0
+    }
+    if (!argv.includes('--yes')) {
+      log('确认后会从 DSH 的会话库里删掉这些副本（DeepSeek 上的原始对话不受影响）。')
+      log('确认请重跑：ds-migrate undo --yes')
+      return 1
+    }
+    const done = await undoImported({})
+    log(`已删除 ${done.removedSessions} 个会话，已清理 ${done.entries} 条导入登记。`)
+    log('DeepSeek 上的原始对话没有任何改动。')
     return 0
   }
 
@@ -243,13 +269,24 @@ async function main() {
       return 0
     }
 
+    const force = Boolean(flag('force', false))
+    const explicitLimit = Number(flag('limit', 0)) || 0
+    const firstRun = !argv.includes('--all') && !force && explicitLimit === 0 && Object.keys(state.sessions).length === 0
+    if (firstRun && !dryRun && !(Boolean(flag('background', false)) || argv.includes('--bg'))) {
+      log('这是第一次迁移，先试迁 1 条：')
+      log('  1) 只读你自己的账号，不修改 DeepSeek 上的任何数据')
+      log('  2) 数据只在本机处理，不经过任何服务器')
+      log('  3) 导入后随时可以 ds-migrate undo 全部撤销')
+      log('')
+    }
+
     if (dryRun) {
       const sessions = await api.listSessions({ onPage: ({ total }) => log(`  已取 ${total} 条…`) })
       const selected = filterSessions(sessions, {
         since: flag('since', undefined) === 'last'
           ? new Date(resolveSince('last', state))
           : flag('since', undefined),
-        limit: Number(flag('limit', 0)) || 0,
+        limit: firstRun ? 1 : explicitLimit,
       })
       log(`dry-run：账号共 ${sessions.length} 条，本次会处理 ${selected.length} 条（不含拉取，不会写任何文件）`)
       for (const item of selected.slice(0, 10)) log(`  · ${String(item.title || '(无标题)').slice(0, 40)}`)
@@ -267,7 +304,7 @@ async function main() {
         downloadFiles: !flag('no-files', false),
         minTurns: Number(flag('min-turns', 0)) || 0,
         since: flag('since', undefined),
-        limit: Number(flag('limit', 0)) || 0,
+        limit: firstRun ? 1 : explicitLimit,
       },
       onProgress: ({ message }) => log(message),
     })
@@ -275,7 +312,17 @@ async function main() {
     log('')
     log(`产物：${manifest.items.length} 个 interchange 文件，${manifest.stats.turns} 轮，${manifest.stats.steps} 步，图片 ${manifest.stats.images}（降级 ${manifest.stats.imagesDegraded}）`)
     log(`跳过 ${manifest.skipped}，失败 ${manifest.failed}`)
+    for (const item of (manifest.tooLarge || []).slice(0, 5)) log(`  超大跳过：${item.title || item.id}（${item.error}）`)
     if (manifest.items.length) log(`下一步导入：/import auto "${outDir}"`)
+    if (firstRun && manifest.items.length) {
+      log('')
+      log('试迁成功 ✓ 确认这些会话在 dsh 侧栏里看起来正常后，跑这条把剩下的全迁：')
+      log('  ds-migrate run --all --background')
+      log('（--background 会放到独立进程，关掉页面也继续）')
+    }
+    if (process.env.DSH_RUN_NOTIFY === '1') {
+      await notify({ title: 'DSH 迁移完成', message: `${manifest.items.length} 条会话 / ${manifest.stats.turns} 轮` })
+    }
     return 0
   }
 
@@ -290,6 +337,6 @@ main()
       process.stderr.write(`${error.message}\n`)
       process.exit(2)
     }
-    process.stderr.write(`失败：${error && error.message ? error.message : error}\n`)
+    process.stderr.write(renderError(error) + '\n')
     process.exit(1)
   })

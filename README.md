@@ -126,6 +126,19 @@ ds-migrate token --file ./tok # 从文件取
 所以 **`npm i` 装上插件就自动拥有该技能**，用户不需要手工往 `~/.dsh/skills` 拷文件。
 宿主没有 `skills` 服务时（headless/精简 profile）会自动跳过，命令与工具照常可用。
 
+## 只想点几下就用（dsh Desktop）
+
+1. 装 **dsh Desktop**
+2. 打开 **插件 → 发现 → 添加索引源**，粘贴：
+   ```
+   https://cdn.jsdelivr.net/gh/run-dream/dsh-deepseek-import@main/index/plugin-index.json
+   ```
+   备用：`https://raw.githubusercontent.com/run-dream/dsh-deepseek-import/main/index/plugin-index.json`
+3. 在卡片上点 **安装**
+4. 开一个新对话，说：**把我 DeepSeek 里的对话都迁到 dsh**
+
+> Desktop 的 `desktop` profile 由 Electron 管理，命令行 `dsh plugin` 不能直接操作它——装插件请在 Desktop 的插件页做。
+
 ## 一句话调用
 
 用户只需要说：

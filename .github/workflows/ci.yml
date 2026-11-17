@@ -29,3 +29,7 @@ jobs:
         run: node test/cdp.test.mjs
       - name: 运行时 skill 注册
         run: node test/skill.test.mjs
+      - name: 错误人话化
+        run: node test/errors.test.mjs
+      - name: 撤销（只删自己的登记）
+        run: node test/undo.test.mjs
