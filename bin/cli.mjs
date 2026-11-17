@@ -14,7 +14,7 @@ import { loginInteractively, resolveStoredToken, resolveToken, writeAuthFile } f
 import { renderScan, scanBrowsers } from '../lib/browsers.mjs'
 import { readTokenFromFile, readTokenViaCdp } from '../lib/cdp.mjs'
 import { migrateAccount } from '../lib/migrate.mjs'
-import { OUT_DIR, STATE_PATH, loadState, saveState } from '../lib/state.mjs'
+import { OUT_DIR, STATE_PATH, acquireRunLock, loadState, releaseRunLock, saveState } from '../lib/state.mjs'
 
 const argv = process.argv.slice(2)
 const command = argv[0] || 'help'
@@ -96,15 +96,44 @@ async function main() {
     const dir = resolve(String(flag('out', OUT_DIR)))
     let files = []
     try { files = (await readdir(dir)).filter((f) => f.endsWith('.interchange.json')) } catch { /* 无产物 */ }
+
+    log(`Node：${process.version}（要求 >=20）${Number(process.versions.node.split('.')[0]) >= 20 ? ' ✔' : ' ✘'}`)
+
+    // 网络：只探测两个真正会用到的域名
+    const probe = async (url) => {
+      const started = Date.now()
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 6000)
+      try {
+        const res = await fetch(url, { method: 'GET', signal: controller.signal, headers: { 'User-Agent': 'dsh-doctor' } })
+        return { ok: true, status: res.status, ms: Date.now() - started }
+      } catch (error) {
+        return { ok: false, error: error.name === 'AbortError' ? '超时 6s' : error.message, ms: Date.now() - started }
+      } finally { clearTimeout(timer) }
+    }
+    const chat = await probe('https://chat.deepseek.com/')
+    const files_svc = await probe('https://files.deepseeksvc.com/')
+    log(`chat.deepseek.com：${chat.ok ? `✔ ${chat.status} (${chat.ms}ms)` : `✘ ${chat.error}`}`)
+    log(`files.deepseeksvc.com：${files_svc.ok ? `✔ ${files_svc.status} (${files_svc.ms}ms)` : `✘ ${files_svc.error}`}`)
+
     const stored = await resolveStoredToken({ log: () => {} })
-    log(`登录态：${stored ? stored.source : '无（需要 login）'}`)
+    log(`登录态：${stored ? `✔ ${stored.source}` : '✘ 无（运行 ds-migrate login）'}`)
+
+    const scan = await scanBrowsers({ checkTokens: false })
+    log(`浏览器：${scan.installed.length ? scan.installed.map((b) => b.name).join('、') : '未检测到'}`)
+    log(`调试端口：${scan.cdp.length ? scan.cdp.map((c) => `:${c.port} ${c.browser}`).join('、') : '无'}`)
+
     log(`状态文件：${STATE_PATH}（已记录 ${Object.keys(state.sessions).length} 条会话）`)
     log(`产物目录：${dir}（${files.length} 个 interchange 文件）`)
-    if (files.length) {
-      const info = await stat(join(dir, files[0]))
-      log(`首个产物：${files[0]}（${Math.round(info.size / 1024)}KB）`)
-      log(`下一步：/import auto "${dir}"`)
-    }
+
+    try {
+      const { statfs } = await import('node:fs/promises')
+      const fsInfo = await statfs(dir)
+      const freeGb = (fsInfo.bavail * fsInfo.bsize) / 1024 / 1024 / 1024
+      log(`磁盘剩余：${freeGb.toFixed(1)} GB ${freeGb > 2 ? '✔' : '⚠ 空间偏小'}`)
+    } catch { /* 部分平台不支持 statfs */ }
+
+    if (files.length) log(`下一步：/import auto "${dir}"`)
     return 0
   }
 
@@ -174,6 +203,13 @@ async function main() {
   }
 
   if (command === 'run') {
+    const lock = await acquireRunLock()
+    if (!lock.ok) {
+      log(`已有迁移在进行（pid ${lock.holder.pid}，开始于 ${new Date(lock.holder.startedAt).toLocaleString()}）。`)
+      log('如果确认那个进程已经不在了，删掉 ~/.dsh/dsh-deepseek-import/run.lock 再试。')
+      return 1
+    }
+    process.on('exit', () => { releaseRunLock().catch(() => {}) })
     const dryRun = Boolean(flag('dry-run', false))
     const outDir = resolve(String(flag('out', OUT_DIR)))
     const { api } = await buildApi()

@@ -138,6 +138,12 @@ Agent 侧就三步：`deepseek_migrate({action:"status"})` →（需要时）`lo
 并给出建议动作 `use-profile / attach-cdp / launch / none`——只有 `launch` 才需要弹出浏览器让用户扫码。
 给集成方看的完整说明（含可直接粘进系统提示的片段）在 [docs/agent-quickstart.md](docs/agent-quickstart.md)。
 
+## 国内网络环境
+
+零运行时依赖（只用 Node 内置模块），可选依赖只有 Playwright（且通常用不到）。
+镜像安装、代理、常见报错的处理见 [docs/install-cn.md](docs/install-cn.md)。
+自检一条命令：`ds-migrate doctor`（Node 版本、两个域名的连通性与耗时、登录态、浏览器、磁盘剩余）。
+
 ## 安全与隐私
 
 - 数据全部留在本机，没有任何服务器：[PRIVACY.md](PRIVACY.md)
@@ -161,6 +167,8 @@ node test/api.test.mjs          # 附件下载 URL（ty=p / ty=r / HTML 丢弃�
 node test/import-compat.test.mjs # 喂给真 dsh-chat-import 解析器（未装则 SKIP）
 node test/cdp.test.mjs          # CDP 目标挑选与 token 解析
 node test/skill.test.mjs        # 运行时 skill 注册形状
+node test/browsers.test.mjs     # 浏览器检测与建议动作
+node test/resilience.test.mjs   # 登录失效中止 / 失败重试 / 未知片段计数
 ```
 
 ## License
