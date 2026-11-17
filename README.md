@@ -157,9 +157,10 @@ ds-migrate token --file ./tok # 从文件取
 1. 装 **dsh Desktop**
 2. 打开 **插件 → 发现 → 添加索引源**，粘贴：
    ```
-   https://cdn.jsdelivr.net/gh/run-dream/dsh-deepseek-import@main/index/plugin-index.json
+   https://raw.githubusercontent.com/run-dream/dsh-deepseek-import/main/index/plugin-index.json
    ```
-   备用：`https://raw.githubusercontent.com/run-dream/dsh-deepseek-import/main/index/plugin-index.json`
+   备用：`https://cdn.jsdelivr.net/gh/run-dream/dsh-deepseek-import@main/index/plugin-index.json`
+   （jsdelivr 对 `@main` 有较长缓存，版本更新可能滞后；raw 是实时的）
 3. 在卡片上点 **安装**
 4. 开一个新对话，说：**把我 DeepSeek 里的对话都迁到 dsh**
 
