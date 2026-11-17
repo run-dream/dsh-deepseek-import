@@ -1,6 +1,10 @@
-# dsh-deepseek-import
+# dsh-deepseek-account-import
 
 [![ci](https://github.com/run-dream/dsh-deepseek-import/actions/workflows/ci.yml/badge.svg)](https://github.com/run-dream/dsh-deepseek-import/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/dsh-deepseek-account-import.svg)](https://www.npmjs.com/package/dsh-deepseek-account-import)
+
+> **非官方项目**：与 DeepSeek、DeepSeek Harness 均无隶属或背书关系。它通过你本人账号的登录态调用 DeepSeek
+> 网页端的私有接口，属于灰色地带；只导出你自己的数据、限速使用、后果自负。
 
 把 **一个 DeepSeek 账号里的全部对话**（含思维链、图片、附件）整批迁移进 DeepSeek Harness（dsh）。
 
@@ -20,6 +24,10 @@ chat.deepseek.com 私有接口  →  interchange v1  →  dsh-chat-import  →  
 ## 安装
 
 ```bash
+# 从 npm 装（推荐）
+dsh plugin --profile web add dsh-deepseek-account-import
+
+# 或从源码装
 dsh plugin --profile web add /absolute/path/to/dsh-deepseek-import
 ```
 
