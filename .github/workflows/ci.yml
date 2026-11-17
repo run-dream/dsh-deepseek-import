@@ -33,3 +33,5 @@ jobs:
         run: node test/errors.test.mjs
       - name: 撤销（只删自己的登记）
         run: node test/undo.test.mjs
+      - name: 工具必须声明 output（宿主契约）
+        run: node test/tool-contract.test.mjs
