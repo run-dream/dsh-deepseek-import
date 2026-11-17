@@ -12,9 +12,9 @@ import { join, resolve } from 'node:path'
 import { DeepSeekApi } from '../lib/api.mjs'
 import { loginInteractively, resolveStoredToken, resolveToken, writeAuthFile } from '../lib/auth.mjs'
 import { renderScan, scanBrowsers } from '../lib/browsers.mjs'
-import { readRunStatus, renderRunStatus } from '../lib/background.mjs'
+import { buildRunArgs, readRunStatus, renderRunStatus, startBackgroundRun } from '../lib/background.mjs'
 import { readTokenFromFile, readTokenViaCdp } from '../lib/cdp.mjs'
-import { migrateAccount } from '../lib/migrate.mjs'
+import { filterSessions, migrateAccount, resolveSince } from '../lib/migrate.mjs'
 import { OUT_DIR, STATE_PATH, acquireRunLock, loadState, releaseRunLock, saveState } from '../lib/state.mjs'
 
 const argv = process.argv.slice(2)
@@ -223,6 +223,36 @@ async function main() {
     const outDir = resolve(String(flag('out', OUT_DIR)))
     const { api } = await buildApi()
     const state = await loadState()
+
+    if (Boolean(flag('background', false)) || argv.includes('--bg')) {
+      const info = await startBackgroundRun({
+        since: flag('since', undefined),
+        limit: Number(flag('limit', 0)) || 0,
+        minTurns: Number(flag('min-turns', 0)) || 0,
+        force: Boolean(flag('force', false)),
+        downloadFiles: !flag('no-files', false),
+        outDir,
+      }, { log })
+      if (!info) return 1
+      log(`已启动后台迁移（pid ${info.pid}），日志：${info.journal}`)
+      log('查看进度：ds-migrate progress')
+      return 0
+    }
+
+    if (dryRun) {
+      const sessions = await api.listSessions({ onPage: ({ total }) => log(`  已取 ${total} 条…`) })
+      const selected = filterSessions(sessions, {
+        since: flag('since', undefined) === 'last'
+          ? new Date(resolveSince('last', state))
+          : flag('since', undefined),
+        limit: Number(flag('limit', 0)) || 0,
+      })
+      log(`dry-run：账号共 ${sessions.length} 条，本次会处理 ${selected.length} 条（不含拉取，不会写任何文件）`)
+      for (const item of selected.slice(0, 10)) log(`  · ${String(item.title || '(无标题)').slice(0, 40)}`)
+      if (selected.length > 10) log(`  …另有 ${selected.length - 10} 条`)
+      return 0
+    }
+
     const manifest = await migrateAccount({
       api,
       state,
