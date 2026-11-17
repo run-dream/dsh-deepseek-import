@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./lib/index.mjs",
   "bin": {
-    "ds-migrate": "./bin/cli.mjs"
+    "ds-migrate": "bin/cli.mjs"
   },
   "exports": {
     ".": {
