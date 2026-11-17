@@ -371,6 +371,13 @@ async function main() {
         maxSessionBytes: maxMb ? maxMb * 1024 * 1024 : undefined,
       },
       onProgress: ({ message }) => log(message),
+      onCheckpoint: async (stateNow, manifestNow) => {
+        await saveState(stateNow)
+        try {
+          const { appendFile } = await import('node:fs/promises')
+          await appendFile(join(OUT_DIR, '..', 'run.log'), `${new Date().toISOString()} 进度 ${manifestNow.items.length} 条已写出\n`)
+        } catch { /* 日志失败不影响迁移 */ }
+      },
     })
     await saveState(state)
     log('')

@@ -150,6 +150,10 @@ ds-migrate token --file ./tok # 从文件取
 
 ## 只想点几下就用（dsh Desktop）
 
+> **Desktop 上装/更新插件请用插件页操作，不要让 agent 调 `plugin_manager`**——那会申请提权，
+> 用户不在时审批会一直挂着。另外 Windows 的数据目录是 `C:\Users\<你>\.dsh\`。
+
+
 1. 装 **dsh Desktop**
 2. 打开 **插件 → 发现 → 添加索引源**，粘贴：
    ```

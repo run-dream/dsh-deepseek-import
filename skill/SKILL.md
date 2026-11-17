@@ -8,6 +8,15 @@ description: 把用户 DeepSeek 账号里的全部对话（含思维链、图片
 用户只需要说一句“**把我 DeepSeek 里的对话都迁过来**”。
 （集成方视角的最简调用说明见 `docs/agent-quickstart.md`。）你的任务是把它跑完，而不是解释原理。
 
+## 在 dsh Desktop 上（重要）
+
+- **装/启停插件请让用户自己去插件页操作**。不要调用 `plugin_manager`——它会申请提权（danger-full-access），
+  用户不在电脑前时会一直挂在审批上（实测卡了 3 个多小时）。
+- **路径按当前宿主平台**：Windows Desktop 的 DSH 数据在 `C:\Users\<你>\.dsh\`，不是 WSL 的 `/home/...`。
+  不要照抄文档里的 WSL 路径例子。
+- Desktop 里 `run` 会自动转后台（Electron 宿主）。如果用户装的版本没有这个行为，会卡界面：
+  这时让他**直接强杀并重开 Desktop**，已生成的产物在 `out/` 里，重开后用 `action:"import"` 导入即可，不用重跑。
+
 ## 前置检查（先做，别跳）
 
 1. 调 `deepseek_migrate({ action: "status" })`。
