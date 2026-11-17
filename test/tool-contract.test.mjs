@@ -42,3 +42,28 @@ assert.deepEqual(registered.tools, ['deepseek_migrate'])
 assert.deepEqual(registered.skills, ['deepseek-to-dsh'])
 assert.deepEqual(registered.commands, ['ds-migrate'])
 console.log('tool-contract.test OK')
+
+// 用宿主自带的 schema 校验器验证（装了 dsh 才跑，否则跳过）
+{
+  let assertSupported = null
+  try {
+    const mod = await import('/home/ruanjun01/.local/share/mise/installs/node/22.22.3/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-tools/lib/types/json-schema.js')
+    assertSupported = mod.assertSupportedJsonSchema
+  } catch {
+    try {
+      const mod = await import('@deepseek-ai/dsh-tools/lib/types/json-schema.js')
+      assertSupported = mod.assertSupportedJsonSchema
+    } catch { /* 没装 dsh，跳过 */ }
+  }
+  if (!assertSupported) {
+    console.log('tool-contract.schema SKIP（本机没有 dsh-tools 校验器）')
+  } else {
+    assertSupported(def.output.schema)
+    assertSupported({ type: 'object', properties: def.parameters, additionalProperties: false })
+    assert.throws(() => assertSupported({
+      type: 'object',
+      properties: { ok: { type: 'boolean', required: true } },
+    }), /required is not supported/, '字段级 required 必须被拒（这正是线上炸过的那种写法）')
+    console.log('tool-contract.schema OK')
+  }
+}
