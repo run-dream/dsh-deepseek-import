@@ -1,0 +1,11 @@
+node_modules/
+out/
+out-*/
+raw/
+*.interchange.json
+*.raw.json
+auth.json
+state.json
+browser-profile/
+*.log
+.DS_Store

@@ -1,0 +1,3 @@
+- insert:
+    - id: deepseek-import
+      name: dsh-deepseek-import
