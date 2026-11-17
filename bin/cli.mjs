@@ -10,7 +10,8 @@
 import { mkdir, readdir, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { DeepSeekApi } from '../lib/api.mjs'
-import { browserRoots, findLevelDbDirs, loginInteractively, readTokenFromLevelDb, resolveStoredToken, resolveToken, writeAuthFile } from '../lib/auth.mjs'
+import { loginInteractively, resolveStoredToken, resolveToken, writeAuthFile } from '../lib/auth.mjs'
+import { renderScan, scanBrowsers } from '../lib/browsers.mjs'
 import { readTokenFromFile, readTokenViaCdp } from '../lib/cdp.mjs'
 import { migrateAccount } from '../lib/migrate.mjs'
 import { OUT_DIR, STATE_PATH, loadState, saveState } from '../lib/state.mjs'
@@ -57,6 +58,14 @@ async function main() {
   }
 
   if (command === 'login') {
+    // 第一步永远是检测：已经登录过就别再弹窗
+    const scan = await scanBrowsers({ checkTokens: true })
+    if (argv.includes('--verbose')) log(renderScan(scan))
+    if (scan.recommendation === 'use-profile' || scan.recommendation === 'attach-cdp') {
+      const resolved = await resolveToken({ log })
+      log(`已有可用登录态（来源：${resolved.source}），无需重新登录`)
+      return 0
+    }
     // 默认走「自动拉起浏览器 + CDP」，失败再退回 Playwright
     if (cdpPort !== undefined || argv.includes('--cdp')) {
       const { loginViaLaunchedBrowser } = await import('../lib/launch.mjs')
@@ -100,17 +109,13 @@ async function main() {
   }
 
   if (command === 'browsers') {
-    const roots = await browserRoots()
-    const dirs = await findLevelDbDirs()
-    log(`发现 ${roots.length} 个浏览器数据根、${dirs.length} 个 profile：`)
-    for (const entry of dirs) {
-      const token = await readTokenFromLevelDb(entry.dir)
-      log(`  ${token ? '有登录态' : '      —  '}  ${entry.browser} / ${entry.profile}  ${entry.dir}`)
-    }
-    if (!dirs.length) log('  没找到任何 profile（浏览器可能装在非标准位置）')
-    log('\n如果这里没有你的浏览器（例如国产 Chromium 内核浏览器），改用 CDP：')
-    log('  用 --remote-debugging-port=9222 启动浏览器后跑 ds-migrate token --cdp 9222')
-    return 0
+    const scan = await scanBrowsers()
+    log(renderScan(scan))
+    log('')
+    log('如果上面没有你的浏览器（例如装在非常规位置），可以：')
+    log('  1) 用 --remote-debugging-port=9222 启动它，再跑 ds-migrate token --cdp 9222')
+    log('  2) 或控制台复制 token（JSON.parse(localStorage.userToken).value）存文件，跑 ds-migrate token --file <路径>')
+    return scan.recommendation === 'none' ? 1 : 0
   }
 
   if (command === 'token') {

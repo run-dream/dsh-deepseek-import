@@ -18,6 +18,18 @@ description: 把用户 DeepSeek 账号里的全部对话（含思维链、图片
    装完提示用户重启 dsh（或等 profile 热重载），再从第 1 步重来。
 3. 如果返回 `登录态：无`，说明是第一次：执行 `deepseek_migrate({ action: "login" })`，**告诉用户会弹出一个浏览器窗口**，让他在里面登录 DeepSeek（手机号或微信扫码都行），登录完成后自动继续。
 
+## 第一步永远是「检测浏览器」
+
+不要一上来就弹窗。先跑 `deepseek_migrate({ action: "status" })`，它会告诉你：
+装了哪些浏览器、哪些 profile 已登录、有没有活着的调试端口，以及**建议动作**：
+
+- `use-profile` → 直接读已登录的浏览器，零弹窗，直接 `run`
+- `attach-cdp` → 连已有调试端口，零弹窗（注意：profile 可能因为 Snappy 压缩读不到 token，但 CDP 能读到）
+- `launch` → 需要拉起一个浏览器让用户登录一次（唯一需要人工的环节）
+- `none` → 只能让用户手动给 token
+
+CLI 等价：`ds-migrate browsers`。
+
 ## 登录态拿不到时
 
 按顺序试，别让用户去翻源码：

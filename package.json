@@ -1,6 +1,6 @@
 {
   "name": "dsh-deepseek-account-import",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Migrate a whole DeepSeek account (every conversation, with thinking, web-search evidence, images and attachments) into DeepSeek Harness sessions via dsh-chat-import interchange v1.",
   "type": "module",
   "main": "./lib/index.mjs",

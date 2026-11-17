@@ -132,7 +132,10 @@ ds-migrate token --file ./tok # 从文件取
 
 > **把我 DeepSeek 里的对话都迁到 dsh**
 
-Agent 侧就三步：`deepseek_migrate({action:"status"})` → `login`（自动拉起浏览器，扫码一次）→ `run`。
+Agent 侧就三步：`deepseek_migrate({action:"status"})` →（需要时）`login` → `run`。
+
+`status` **先做浏览器检测**：装了哪些 Chromium 内核浏览器、哪些 profile 已登录、有没有活着的调试端口，
+并给出建议动作 `use-profile / attach-cdp / launch / none`——只有 `launch` 才需要弹出浏览器让用户扫码。
 给集成方看的完整说明（含可直接粘进系统提示的片段）在 [docs/agent-quickstart.md](docs/agent-quickstart.md)。
 
 ## 安全与隐私
