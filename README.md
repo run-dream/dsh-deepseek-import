@@ -126,6 +126,15 @@ ds-migrate token --file ./tok # 从文件取
 所以 **`npm i` 装上插件就自动拥有该技能**，用户不需要手工往 `~/.dsh/skills` 拷文件。
 宿主没有 `skills` 服务时（headless/精简 profile）会自动跳过，命令与工具照常可用。
 
+## 一句话调用
+
+用户只需要说：
+
+> **把我 DeepSeek 里的对话都迁到 dsh**
+
+Agent 侧就三步：`deepseek_migrate({action:"status"})` → `login`（自动拉起浏览器，扫码一次）→ `run`。
+给集成方看的完整说明（含可直接粘进系统提示的片段）在 [docs/agent-quickstart.md](docs/agent-quickstart.md)。
+
 ## 安全与隐私
 
 - 数据全部留在本机，没有任何服务器：[PRIVACY.md](PRIVACY.md)

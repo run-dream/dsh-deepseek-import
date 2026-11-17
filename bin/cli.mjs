@@ -57,7 +57,18 @@ async function main() {
   }
 
   if (command === 'login') {
-    await loginInteractively({ log })
+    // 默认走「自动拉起浏览器 + CDP」，失败再退回 Playwright
+    if (cdpPort !== undefined || argv.includes('--cdp')) {
+      const { loginViaLaunchedBrowser } = await import('../lib/launch.mjs')
+      const port = Number(cdpPort) || 9222
+      const hit = await loginViaLaunchedBrowser({ port, log })
+      if (!hit) return 1
+      await writeAuthFile({ token: hit.token, savedAt: Date.now(), source: hit.source })
+      log(`登录成功（${hit.source}）`)
+      return 0
+    }
+    const resolved = await resolveToken({ log, cdpPort: Number(cdpPort) || undefined, tokenFile: typeof tokenFile === 'string' ? tokenFile : undefined })
+    log(`登录态已就绪（来源：${resolved.source}）`)
     return 0
   }
 
