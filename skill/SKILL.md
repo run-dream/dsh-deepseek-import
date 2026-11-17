@@ -55,6 +55,13 @@ CLI 等价：`ds-migrate browsers`。
    ```
    有失败就逐条列出失败的标题，并说明重跑会只补失败的那些。
 
+## 增量与后台
+
+- **增量**：`deepseek_migrate({ action: "run", since: "last" })` —— 从上次跑到的位置继续（自带 5 分钟重叠，
+  边界会话不会漏）。第一次没有游标时等价全量。
+- **后台**：`deepseek_migrate({ action: "run", background: true })` —— 立刻返回，迁移在独立进程里跑，
+  不占用对话；用 `deepseek_migrate({ action: "progress" })` 看进度。几百条以上一律用后台。
+
 ## 常见情况
 
 - **数量太大**：超过 300 条时建议分批，用 `limit: 100` 跑三次，而不是一次拉到底。

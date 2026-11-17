@@ -31,8 +31,17 @@ deepseek_migrate({ action: "preview" })
 deepseek_migrate({ action: "run" })
 ```
 
-可选参数：`minTurns`（跳过太短的会话）、`since`（只迁这段时间之后的）、`limit`（分批）、
-`force`（重做已迁移的）、`downloadFiles: false`（不要图片）。
+可选参数：`minTurns`（跳过太短的会话）、`since`（日期，或 `"last"` 表示接着上次跑）、
+`limit`（分批）、`force`（重做已迁移的）、`downloadFiles: false`（不要图片）、
+`background: true`（独立进程跑，立刻返回）。
+
+增量与后台：
+
+```js
+deepseek_migrate({ action: "run", since: "last" })        // 只迁上次之后的新会话
+deepseek_migrate({ action: "run", background: true })      // 后台跑，不占对话
+deepseek_migrate({ action: "progress" })                   // 看后台进度
+```
 
 ## 4. 可以直接粘进系统提示的片段
 

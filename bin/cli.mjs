@@ -12,6 +12,7 @@ import { join, resolve } from 'node:path'
 import { DeepSeekApi } from '../lib/api.mjs'
 import { loginInteractively, resolveStoredToken, resolveToken, writeAuthFile } from '../lib/auth.mjs'
 import { renderScan, scanBrowsers } from '../lib/browsers.mjs'
+import { readRunStatus, renderRunStatus } from '../lib/background.mjs'
 import { readTokenFromFile, readTokenViaCdp } from '../lib/cdp.mjs'
 import { migrateAccount } from '../lib/migrate.mjs'
 import { OUT_DIR, STATE_PATH, acquireRunLock, loadState, releaseRunLock, saveState } from '../lib/state.mjs'
@@ -49,6 +50,7 @@ async function main() {
   ds-migrate list [--json]                 列出会话
   ds-migrate dump <sessionId> [--out f]    保存一条会话的原始 JSON
   ds-migrate run [--dry-run] [--limit N] [--min-turns N] [--since YYYY-MM-DD] [--force] [--no-files] [--out dir]
+  ds-migrate progress                      查看后台迁移进度
   ds-migrate doctor                        体检
 
 产出的 interchange v1 文件默认写到：${OUT_DIR}
@@ -134,6 +136,13 @@ async function main() {
     } catch { /* 部分平台不支持 statfs */ }
 
     if (files.length) log(`下一步：/import auto "${dir}"`)
+    return 0
+  }
+
+  if (command === 'progress') {
+    const status = await readRunStatus()
+    log(renderRunStatus(status))
+    if (!status.info) log('（用 ds-migrate run 或在 dsh 里调用 deepseek_migrate 启动一次迁移）')
     return 0
   }
 
