@@ -83,7 +83,7 @@ CLI 等价：`ds-migrate browsers`。
 
 ## 超大单会话
 
-单条超过 32MB 会被跳过（不计失败）。用户想单独要那一条时：
+默认不按体积跳过（上限 1GB，靠流式写出 + 大堆防 OOM）。想单独要某一条或放宽上限时：
 
 ```
 deepseek_migrate({ action: "skipped" })                      // 列出被跳过的，带体积
@@ -92,6 +92,7 @@ deepseek_migrate({ action: "run", sessionIds: ["<id>"],
 ```
 
 先 `downloadFiles: false` 只迁文本，确认没问题再放开图片——体积大多来自图片。
+只有超过 1GB（或显式设定的上限）才会真正跳过。
 
 ## 后悔药
 

@@ -59,7 +59,23 @@ async function buildApi() {
   return { api: new DeepSeekApi({ token: resolved.token, log }), resolved }
 }
 
+const HEAP_MB = 6144
+
+/** 大会话解析需要更大堆；用子进程自举一次，避免默认堆上限直接 OOM。 */
+async function ensureHeap() {
+  if (process.env.DSH_HEAP_BUMPED === '1') return
+  if (process.execArgv.some((arg) => arg.startsWith('--max-old-space-size'))) return
+  const { spawnSync } = await import('node:child_process')
+  const args = [`--max-old-space-size=${HEAP_MB}`, ...process.execArgv, ...process.argv.slice(1)]
+  const result = spawnSync(process.execPath, args, {
+    stdio: 'inherit',
+    env: { ...process.env, DSH_HEAP_BUMPED: '1' },
+  })
+  process.exit(result.status === null ? 1 : result.status)
+}
+
 async function main() {
+  await ensureHeap()
   if (command === 'help' || command === '--help') {
     log(`用法：
   ds-migrate login                         弹窗登录 DeepSeek 并保存凭证

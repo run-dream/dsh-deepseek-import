@@ -97,3 +97,29 @@ console.log('resilience.test OK')
   assert.equal(okRun.items.length, 1, '放宽上限 + 指定 id 应成功导入')
   console.log('resilience.oversize OK')
 }
+
+// 6) 大文档流式写出：产物必须是合法 JSON，且与一次性写内容等价
+{
+  const { writeInterchange } = await import('../lib/migrate.mjs')
+  const { readFile } = await import('node:fs/promises')
+  const { join } = await import('node:path')
+  const big = {
+    interchange: 'dsh-chat-import',
+    version: 1,
+    meta: { id: 'big', createdAt: 1 },
+    title: '大文档',
+    provider: 'deepseek-web',
+    turns: Array.from({ length: 40 }, (_, i) => ({
+      prompt: `问题 ${i} `.repeat(2000),
+      steps: [{ content: [{ type: 'text', text: '回答'.repeat(500) }] }],
+    })),
+  }
+  const file = join(outDir, 'big.interchange.json')
+  const size = await writeInterchange(file, big, { threshold: 1024 })  // 强制走流式
+  const parsed = JSON.parse(await readFile(file, 'utf8'))
+  assert.equal(parsed.turns.length, 40, '流式写出不能丢轮次')
+  assert.equal(parsed.turns[0].prompt, big.turns[0].prompt)
+  assert.equal(parsed.meta.id, 'big')
+  assert.ok(size > 10000, '应报告实际字节数')
+  console.log('resilience.stream OK', size)
+}
