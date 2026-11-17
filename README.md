@@ -1,3 +1,11 @@
+> ## ⚠️ 项目已停止维护
+>
+> DeepSeek 官方已提供 **`@deepseek-ai/dsh-deepseek-chat-import`**（DeepSeek 官网导出 ZIP 一键导入，
+> 入口在「新建会话」右侧按钮）。本项目不再维护，请改用官方插件。
+>
+> 本仓库仅作技术存档：它记录了一条**不经导出、直读账号 API** 的迁移路径（含私有接口、
+> 文件服务、interchange v1 转换、Desktop/Electron 兼容等实测结论），供后来者参考。
+
 # dsh-deepseek-migrate
 
 [![ci](https://github.com/run-dream/dsh-deepseek-import/actions/workflows/ci.yml/badge.svg)](https://github.com/run-dream/dsh-deepseek-import/actions/workflows/ci.yml)
