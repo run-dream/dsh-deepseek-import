@@ -1,5 +1,7 @@
 # dsh-deepseek-import
 
+[![ci](https://github.com/run-dream/dsh-deepseek-import/actions/workflows/ci.yml/badge.svg)](https://github.com/run-dream/dsh-deepseek-import/actions/workflows/ci.yml)
+
 把 **一个 DeepSeek 账号里的全部对话**（含思维链、图片、附件）整批迁移进 DeepSeek Harness（dsh）。
 
 链路：
@@ -63,6 +65,10 @@ node bin/cli.mjs login | whoami | list | dump <id> | run | doctor
 - 单文件上限 20MB，单次迁移附件预算 200MB，超出的降级成文本占位。
 - 断点续跑：状态在 `~/.dsh/dsh-deepseek-import/state.json`，每完成一条会话立即落盘，重跑只补缺口。
 
+## 设计取舍
+
+为什么不用无头浏览器硬爬、登录态为什么要走 CDP、附件地址是怎么找到的、为什么选 interchange v1——都在 [docs/design.md](docs/design.md)。
+
 ## 验收
 
 ```bash
@@ -75,3 +81,16 @@ node test/migrate.test.mjs   # 编排：幂等、force、min-turns、limit
 - **手机本机模式不支持**：抓取要有桌面浏览器/HTTP 环境，dsh-go 的 App 只作入口，迁移跑在连着的电脑上。
 - DeepSeek 的文件接口没有公开文档，附件下载按已知形态依次尝试，失败会降级成文本占位并在报告里计数。
 - 大批量抓取可能触发风控，这是使用私有接口的固有风险，别调高频率。
+
+## 测试
+
+```bash
+node test/convert.test.mjs      # 分支裁剪 / 新旧格式 / 思维链 / 图片内嵌
+node test/migrate.test.mjs      # 幂等 / force / min-turns / limit
+node test/api.test.mjs          # 附件下载 URL（ty=p / ty=r / HTML 丢弃）
+node test/import-compat.test.mjs # 喂给真 dsh-chat-import 解析器（未装则 SKIP）
+```
+
+## License
+
+MIT

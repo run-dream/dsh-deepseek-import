@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: 转换器（分支裁剪 / 新旧格式 / 思维链 / 图片）
+        run: node test/convert.test.mjs
+      - name: 编排（幂等 / force / min-turns / limit）
+        run: node test/migrate.test.mjs
+      - name: 附件下载 URL（ty=p / ty=r / HTML 丢弃）
+        run: node test/api.test.mjs
+      - name: 真解析器兼容（未装 dsh-chat-import 时自动 SKIP）
+        run: node test/import-compat.test.mjs
