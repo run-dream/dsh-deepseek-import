@@ -1,6 +1,6 @@
 {
   "name": "dsh-deepseek-migrate",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "把一个 DeepSeek 账号的全部对话整体迁到 DSH：思维链、联网搜索证据、图片原图、附件一并保留，装好后说一句话即可。",
   "type": "module",
   "main": "./lib/index.mjs",

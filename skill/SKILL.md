@@ -60,6 +60,8 @@ CLI 等价：`ds-migrate browsers`。
 2. 之后每 30–60 秒调用一次 `deepseek_migrate({ action: "progress", json: true })`，
    用返回的 `percent / done / total / etaMs` **更新同一个进度条**（不要新建卡片、不要连续轮询）。
 3. `finished: true` 时报告条数并收尾；用户中途问进度就立刻查一次。
+4. **硬性要求**：即使 `nextCommand` 为空、用户也没问，后台启动后 60 秒内**至少主动刷新一次**进度条，
+   不要留下一个永远停在 0% 的卡片。
 
 ## 执行（第一次只迁 1 条）
 
