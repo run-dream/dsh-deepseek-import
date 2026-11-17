@@ -8,11 +8,11 @@
 
 ```bash
 # 临时用镜像
-npm i -g dsh-deepseek-account-import --registry=https://registry.npmmirror.com
+npm i -g dsh-deepseek-migrate --registry=https://registry.npmmirror.com
 
 # 或者给 dsh 的插件安装走镜像（pnpm）
 pnpm config set registry https://registry.npmmirror.com
-dsh plugin --profile web add dsh-deepseek-account-import
+dsh plugin --profile web add dsh-deepseek-migrate
 ```
 
 装的是 DSH 插件时，实际执行方是 profile 里的 pnpm，所以配 `pnpm` 的 registry 更有效。

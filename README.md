@@ -1,7 +1,7 @@
-# dsh-deepseek-account-import
+# dsh-deepseek-migrate
 
 [![ci](https://github.com/run-dream/dsh-deepseek-import/actions/workflows/ci.yml/badge.svg)](https://github.com/run-dream/dsh-deepseek-import/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/dsh-deepseek-account-import.svg)](https://www.npmjs.com/package/dsh-deepseek-account-import)
+[![npm](https://img.shields.io/npm/v/dsh-deepseek-migrate.svg)](https://www.npmjs.com/package/dsh-deepseek-migrate)
 
 > **非官方项目**：与 DeepSeek、DeepSeek Harness 均无隶属或背书关系。它通过你本人账号的登录态调用 DeepSeek
 > 网页端的私有接口，属于灰色地带；只导出你自己的数据、限速使用、后果自负。
@@ -47,7 +47,7 @@ ds-migrate run --only <id> --max-mb 600 --force --no-files
 
 ```bash
 # 从 npm 装（推荐）
-dsh plugin --profile web add dsh-deepseek-account-import
+dsh plugin --profile web add dsh-deepseek-migrate
 
 # 或从源码装
 dsh plugin --profile web add /absolute/path/to/dsh-deepseek-import
