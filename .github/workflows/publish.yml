@@ -1,0 +1,33 @@
+name: publish
+
+# 走 npm Trusted Publishing（OIDC），不需要任何 token。
+# 首次使用前需要在 npmjs 上配置一次 Trusted Publisher：
+#   npmjs.com → 包 → Settings → Publishing access → Trusted Publisher
+#   Organization or user: run-dream
+#   Repository: dsh-deepseek-import
+#   Workflow filename: publish.yml
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - name: 测试
+        run: |
+          node test/convert.test.mjs
+          node test/migrate.test.mjs
+          node test/api.test.mjs
+          node test/import-compat.test.mjs
+      - name: 发布（OIDC + provenance）
+        run: npm publish --provenance --access public
